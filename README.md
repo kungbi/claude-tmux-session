@@ -25,18 +25,7 @@ Automatically runs `claude` inside a tmux session and offers to resume your prev
 ```zsh
 brew tap kungbi/claude-tmux
 brew install claude-tmux-session
-```
-
-Add to `~/.zshrc` (also shown in post-install instructions):
-
-```zsh
-source "$(brew --prefix)/share/claude-tmux-session/claude-tmux-session.zsh"
-```
-
-Then apply:
-
-```zsh
-source ~/.zshrc
+echo 'source "$(brew --prefix)/share/claude-tmux-session/claude-tmux-session.zsh"' >> ~/.zshrc && source ~/.zshrc
 ```
 
 ### Manual
@@ -57,12 +46,12 @@ claude
 When you return to the same directory within 5 minutes after closing, you'll see a session list:
 
 ```
-[claude] 세션 목록: ~/your/project
-  [1] 2분 전
-  [2] 활성 세션
-  [n] 새 세션 생성
-  [q] 취소
-선택:
+[claude] Session list: ~/your/project
+  [1] 2 min ago
+  [2] active session
+  [n] new session
+  [q] cancel
+select:
 ```
 
 Press a number to resume, `n` for a new session, or `q` to cancel.
@@ -70,13 +59,14 @@ Press a number to resume, `n` for a new session, or `q` to cancel.
 ## CLI
 
 ```zsh
-claude-tmux version   # show current version
-claude-tmux update    # update to latest version
-claude-tmux status    # list active sessions
-claude-tmux clean     # remove expired stamp files
+claude-tmux version        # show current version
+claude-tmux update         # update to latest version
+claude-tmux ls             # list active sessions
+claude-tmux clean          # remove expired stamp files
+claude-tmux alias <name>   # register a short alias (e.g. ct)
 ```
 
-`claude-tmux update` runs `brew upgrade` when installed via Homebrew, or downloads directly for manual installs.
+`claude-tmux update` runs `brew update && brew upgrade` when installed via Homebrew, or downloads directly for manual installs.
 
 ## Aliases
 
