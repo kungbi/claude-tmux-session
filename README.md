@@ -80,6 +80,7 @@ claude-tmux clean          # remove expired stamp files
 claude-tmux alias <name>   # register a short alias (e.g. ct)
 claude-tmux on             # enable session manager
 claude-tmux off            # disable session manager
+claude-tmux uninstall      # remove claude-tmux-session completely
 ```
 
 `claude-tmux update` runs `brew update && brew upgrade` when installed via Homebrew, or downloads directly for manual installs.

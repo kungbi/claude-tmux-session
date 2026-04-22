@@ -80,6 +80,7 @@ claude-tmux clean          # 만료된 stamp 파일 정리
 claude-tmux alias <name>   # 단축키 등록 (예: ct)
 claude-tmux on             # 세션 매니저 활성화
 claude-tmux off            # 세션 매니저 비활성화
+claude-tmux uninstall      # claude-tmux-session 완전 제거
 ```
 
 `claude-tmux update`는 Homebrew로 설치한 경우 `brew update && brew upgrade`를 실행하고, 수동 설치의 경우 직접 다운로드합니다.
