@@ -1,10 +1,10 @@
 # claude-tmux-session
 
+[한국어 README](README.ko.md)
+
 Claude Code tmux session manager for zsh (macOS).
 
 Automatically runs `claude` inside a tmux session and offers to resume your previous session when you return to the same directory within 5 minutes.
-
-[한국어 README](README.ko.md)
 
 ## Features
 

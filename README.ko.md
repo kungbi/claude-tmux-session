@@ -1,10 +1,10 @@
 # claude-tmux-session
 
+[English README](README.md)
+
 zsh용 Claude Code tmux 세션 매니저 (macOS).
 
 `claude` 실행 시 자동으로 tmux 세션 안에서 시작하고, 5분 이내에 같은 디렉토리로 돌아오면 이전 세션을 이어서 사용할 수 있습니다.
-
-[English README](README.md)
 
 ## 기능
 
