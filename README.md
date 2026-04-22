@@ -23,7 +23,7 @@ Automatically runs `claude` inside a tmux session and offers to resume your prev
 ### Homebrew (recommended)
 
 ```zsh
-brew tap kungbi/claude-tmux https://github.com/kungbi/kungbi-homebrew-claude-tmux
+brew tap kungbi/claude-tmux
 brew install claude-tmux-session
 ```
 
