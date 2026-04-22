@@ -1,7 +1,7 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="0.3.5"
+_CLAUDE_TMUX_VERSION="0.3.6"
 
 # Capture script directory at source time (%x = currently sourced file path).
 _CLAUDE_TMUX_SCRIPT_DIR="${${(%):-%x}:A:h}"
@@ -149,42 +149,34 @@ _claude_tmux() {
     fi
 
     if (( watcher_active )); then
-      # Step 1: Create detached session with placeholder command
-      tmux new-session -d -s "$new_key" "sleep infinity"
-
-      # Step 2: Capture claude pane id (stable %N id, not index)
-      local claude_pane
-      claude_pane="$(tmux display-message -p -t "$new_key" '#{pane_id}')"
-
-      # Step 3: Split right 30%, capture watcher pane id, pass --claude-pane (Layer 3)
-      local watcher_pane
-      watcher_pane="$(tmux split-window -h -p 30 -t "$claude_pane" -P -F '#{pane_id}' \
-        "$watcher_script --cwd $(printf %q "$PWD") --claude-pane $claude_pane")"
-
-      # Step 4: Restore focus to claude pane
-      tmux select-pane -t "$claude_pane"
-
-      # Step 5: Layer 2 — window-scope hook with #{hook_pane} guard + self-unregister
-      _claude_tmux_attach_cleanup_hook "$new_key" "$claude_pane" "$watcher_pane"
-
-      # Step 6: Write real claude command to temp file to avoid shell quoting issues
-      # Layer 1 — trailing inline kill-pane after claude exits
+      # Write a setup+run script executed INSIDE the tmux pane.
+      # Avoids -d (detached) new-session which crashes the server on some setups.
+      # The script splits the watcher from within the running pane (has proper terminal),
+      # runs claude (Layer 1: inline kill-pane on exit), watcher uses self-watchdog (Layer 3).
       local tmpscript
       tmpscript="$(mktemp /tmp/claude-tmux-cmd.XXXXXX)"
-      {
-        printf '#!/bin/sh\n'
-        printf 'command claude %s\n' "${(j: :)${(q-)_CLAUDE_TMUX_WATCH_ARGS}}"
-        printf 'echo "$(date +%%s)" > %s\n' "$(printf %q "$stamp_path")"
-        printf 'tmux kill-pane -t %s 2>/dev/null\n' "$watcher_pane"
-        printf 'rm -f %s\n' "$(printf %q "$tmpscript")"
-      } > "$tmpscript"
       chmod +x "$tmpscript"
 
-      # Step 7: Respawn claude pane with the real command (replaces sleep infinity)
-      tmux respawn-pane -k -t "$claude_pane" "$tmpscript"
+      local _wq _cq _sq _tq _ca
+      _wq="$(printf %q "$watcher_script")"
+      _cq="$(printf %q "$PWD")"
+      _sq="$(printf %q "$stamp_path")"
+      _tq="$(printf %q "$tmpscript")"
+      _ca="${(j: :)${(q-)_CLAUDE_TMUX_WATCH_ARGS}}"
 
-      # Step 8: Attach
-      tmux attach-session -t "$new_key"
+      cat > "$tmpscript" << ENDSCRIPT
+#!/bin/sh
+_cp=\$(tmux display-message -p '#{pane_id}')
+_wp=\$(tmux split-window -h -p 30 -P -F '#{pane_id}' ${_wq} --cwd ${_cq} --claude-pane "\$_cp")
+tmux select-pane -t "\$_cp"
+command claude ${_ca}
+echo "\$(date +%s)" > ${_sq}
+tmux kill-pane -t "\$_wp" 2>/dev/null
+rm -f ${_tq}
+ENDSCRIPT
+
+      # No -d: session attaches immediately (same as original code)
+      tmux new-session -s "$new_key" "$tmpscript"
     else
       # Existing behavior — use sanitized args (--watch/--no-watch already stripped)
       local claude_args=${(q-)_CLAUDE_TMUX_WATCH_ARGS}
