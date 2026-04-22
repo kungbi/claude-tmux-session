@@ -1,0 +1,66 @@
+#!/bin/bash
+# claude-watch — lightweight polling watcher for claude-tmux-session
+
+interval=2
+cwd=""
+claude_pane=""
+
+# Argument parsing
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --interval)
+      interval="$2"; shift 2 ;;
+    --cwd)
+      cwd="$2"; shift 2 ;;
+    --claude-pane)
+      claude_pane="$2"; shift 2 ;;
+    *)
+      shift ;;
+  esac
+done
+
+# Change to working directory if provided
+if [ -n "$cwd" ]; then
+  cd "$cwd" || exit 1
+fi
+
+trap 'exit 0' INT TERM
+
+while true; do
+  # Layer 3 watchdog: exit if the tracked pane is gone
+  if [ -n "$claude_pane" ]; then
+    if ! tmux list-panes -a -F '#{pane_id}' 2>/dev/null | grep -qF "$claude_pane"; then
+      exit 0
+    fi
+  fi
+
+  clear
+
+  # Header
+  echo "~ claude-watch | $(basename "${cwd:-$PWD}") | $(date +%H:%M:%S)"
+  echo ""
+
+  if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    echo "── Changed ──"
+    git diff --stat HEAD 2>/dev/null
+    echo ""
+    echo "── Status ──"
+    git status --short 2>/dev/null | head -10
+    echo ""
+    echo "── Recent edits (10m) ──"
+    find . -type f -mmin -10 \
+      -not -path './.git/*' \
+      -not -path './node_modules/*' \
+      2>/dev/null | head -15
+  else
+    echo "Not a git repository — showing recent file edits only"
+    echo ""
+    echo "── Recent edits (10m) ──"
+    find . -type f -mmin -10 \
+      -not -path './.git/*' \
+      -not -path './node_modules/*' \
+      2>/dev/null | head -15
+  fi
+
+  sleep "$interval"
+done
