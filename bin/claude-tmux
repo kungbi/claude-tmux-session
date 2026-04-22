@@ -7,6 +7,12 @@ _CLAUDE_TMUX_STAMP_DIR="${HOME}/.cache/claude-sessions"
 _ctm_install_path() {
   local brew_prefix
   brew_prefix=$(brew --prefix 2>/dev/null)
+  if [[ -z "$brew_prefix" ]]; then
+    local _p
+    for _p in /opt/homebrew /usr/local; do
+      [[ -d "$_p/Cellar" ]] && brew_prefix="$_p" && break
+    done
+  fi
   if [[ -n "$brew_prefix" && -f "${brew_prefix}/share/claude-tmux-session/claude-tmux-session.zsh" ]]; then
     echo "${brew_prefix}/share/claude-tmux-session/claude-tmux-session.zsh"
   elif [[ -f "${HOME}/.local/share/claude-tmux-session/claude-tmux-session.zsh" ]]; then
@@ -19,9 +25,13 @@ _ctm_is_brew() {
 }
 
 _ctm_version() {
-  local path version
-  path=$(_ctm_install_path)
-  [[ -n "$path" ]] && version=$(grep '^_CLAUDE_TMUX_VERSION=' "$path" 2>/dev/null | cut -d'"' -f2)
+  local _install_path version line
+  _install_path=$(_ctm_install_path)
+  if [[ -n "$_install_path" ]]; then
+    line=$(grep '^_CLAUDE_TMUX_VERSION=' "$_install_path" 2>/dev/null)
+    version="${line#*\"}"
+    version="${version%\"*}"
+  fi
   printf 'claude-tmux-session %s\n' "${version:-unknown}"
 }
 
