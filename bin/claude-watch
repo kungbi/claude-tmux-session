@@ -28,6 +28,8 @@ export GIT_PAGER=cat
 
 trap 'exit 0' INT TERM
 
+prev_content=""
+
 while true; do
   # Layer 3 watchdog: exit if the tracked pane is gone
   if [ -n "$claude_pane" ]; then
@@ -36,33 +38,40 @@ while true; do
     fi
   fi
 
-  # Move cursor to top-left and clear to end — no scroll flash
-  printf '\033[H\033[J'
-
-  # Header
-  echo "~ claude-watch | $(basename "${cwd:-$PWD}") | $(date +%H:%M:%S)"
-  echo ""
-
+  # Build content (timestamp excluded from diff check so unchanged files don't flicker)
   if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
-    echo "── Changed ──"
-    git diff --stat HEAD 2>/dev/null
-    echo ""
-    echo "── Status ──"
-    git status --short 2>/dev/null | head -10
-    echo ""
-    echo "── Recent edits (10m) ──"
-    find . -type f -mmin -10 \
-      -not -path './.git/*' \
-      -not -path './node_modules/*' \
-      2>/dev/null | head -15
+    new_content=$(
+      echo "── Changed ──"
+      git diff --stat HEAD 2>/dev/null
+      echo ""
+      echo "── Status ──"
+      git status --short 2>/dev/null | head -10
+      echo ""
+      echo "── Recent edits (10m) ──"
+      find . -type f -mmin -10 \
+        -not -path './.git/*' \
+        -not -path './node_modules/*' \
+        2>/dev/null | head -15
+    )
   else
-    echo "Not a git repository — showing recent file edits only"
+    new_content=$(
+      echo "Not a git repository — showing recent file edits only"
+      echo ""
+      echo "── Recent edits (10m) ──"
+      find . -type f -mmin -10 \
+        -not -path './.git/*' \
+        -not -path './node_modules/*' \
+        2>/dev/null | head -15
+    )
+  fi
+
+  # Only redraw when content changes — eliminates flicker during idle
+  if [ "$new_content" != "$prev_content" ]; then
+    printf '\033[H\033[J'
+    echo "~ claude-watch | $(basename "${cwd:-$PWD}") | $(date +%H:%M:%S)"
     echo ""
-    echo "── Recent edits (10m) ──"
-    find . -type f -mmin -10 \
-      -not -path './.git/*' \
-      -not -path './node_modules/*' \
-      2>/dev/null | head -15
+    printf '%s\n' "$new_content"
+    prev_content="$new_content"
   fi
 
   sleep "$interval"
