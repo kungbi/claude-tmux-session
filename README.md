@@ -23,7 +23,7 @@ Automatically runs `claude` inside a tmux session and offers to resume your prev
 ### Homebrew (recommended)
 
 ```zsh
-brew tap kungbi/tap
+brew tap kungbi/claude-tmux https://github.com/kungbi/kungbi-homebrew-claude-tmux
 brew install claude-tmux-session
 ```
 
@@ -64,13 +64,13 @@ Press a number to resume, `n` for a new session, or `q` to cancel.
 ## CLI
 
 ```zsh
-claude-tmux version   # 현재 버전 출력
-claude-tmux update    # 최신 버전으로 업데이트
-claude-tmux status    # 활성 세션 목록
-claude-tmux clean     # 만료된 stamp 파일 정리
+claude-tmux version   # show current version
+claude-tmux update    # update to latest version
+claude-tmux status    # list active sessions
+claude-tmux clean     # remove expired stamp files
 ```
 
-`claude-tmux update`는 Homebrew로 설치된 경우 `brew upgrade`를 실행하고, 수동 설치의 경우 직접 다운로드합니다.
+`claude-tmux update` runs `brew upgrade` when installed via Homebrew, or downloads directly for manual installs.
 
 ## Aliases
 
