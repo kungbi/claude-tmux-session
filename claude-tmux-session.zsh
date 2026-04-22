@@ -1,60 +1,7 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="0.4.1"
-
-# Capture script directory at source time (%x = currently sourced file path).
-_CLAUDE_TMUX_SCRIPT_DIR="${${(%):-%x}:A:h}"
-
-# Returns 0 if watcher should be active for this invocation.
-# Precedence: --no-watch flag > --watch flag > persistent stamp.
-_claude_tmux_watch_enabled() {
-  case "$_CLAUDE_TMUX_WATCH_OVERRIDE" in
-    off) return 1 ;;
-    on)  return 0 ;;
-  esac
-  [[ -f "${stamp_dir}/.watch-enabled" ]]
-}
-
-# Resolve absolute path to bin/claude-watch (next to this script).
-_claude_tmux_watch_script() {
-  print -r -- "${_CLAUDE_TMUX_SCRIPT_DIR}/bin/claude-watch"
-}
-
-# Strip --watch / --no-watch from $@ and set _CLAUDE_TMUX_WATCH_OVERRIDE.
-# Result is stored in _CLAUDE_TMUX_WATCH_ARGS array.
-_claude_tmux_parse_watch_flag() {
-  local out=() arg
-  _CLAUDE_TMUX_WATCH_OVERRIDE=""
-  for arg in "$@"; do
-    case "$arg" in
-      --watch)    _CLAUDE_TMUX_WATCH_OVERRIDE="on" ;;
-      --no-watch) _CLAUDE_TMUX_WATCH_OVERRIDE="off" ;;
-      *) out+=("$arg") ;;
-    esac
-  done
-  _CLAUDE_TMUX_WATCH_ARGS=("${out[@]}")
-}
-
-# Check tmux version >= 2.4.
-_claude_tmux_version_ok() {
-  local v
-  v="$(tmux -V 2>/dev/null | awk '{print $2}')" || return 1
-  v="${v%%[!0-9.]*}"
-  local major="${v%%.*}" minor="${v#*.}"; minor="${minor%%.*}"
-  (( major > 2 )) || (( major == 2 && minor >= 4 ))
-}
-
-# Layer 2: window-scope pane-exited hook with #{hook_pane} guard + self-unregister.
-# IMPORTANT: Do NOT use set-hook -p (pane scope) — it is a silent no-op on tmux 3.4 macOS.
-# Only window scope (-w) is confirmed to fire.
-_claude_tmux_attach_cleanup_hook() {
-  local session="$1" claude_pane="$2" watcher_pane="$3"
-  tmux set-hook -w -t "$session" pane-exited \
-    "if -F '#{==:#{hook_pane},${claude_pane}}' \
-      'kill-pane -t ${watcher_pane} ; set-hook -wu -t ${session} pane-exited'" \
-    2>/dev/null
-}
+_CLAUDE_TMUX_VERSION="0.2.12"
 
 _claude_tmux() {
   local dir_hash="claude_$(echo "$PWD" | md5 -q | head -c 8)"
@@ -130,111 +77,11 @@ _claude_tmux() {
     fi
 
     local new_key="${dir_hash}_$(date +%s)_$$"
-    local stamp_path="$stamp_dir/$new_key"
-
-    # Parse --watch / --no-watch flags before proceeding
-    _claude_tmux_parse_watch_flag "$@"
-
-    local watcher_script
-    watcher_script="$(_claude_tmux_watch_script)"
-
-    local watcher_active=0
-    if _claude_tmux_watch_enabled \
-       && command -v tmux >/dev/null \
-       && _claude_tmux_version_ok \
-       && [[ -x "$watcher_script" ]]; then
-      watcher_active=1
-    elif _claude_tmux_watch_enabled; then
-      print -u2 "claude-tmux: watcher requested but unavailable (tmux missing/old or watcher script not found); launching claude without watcher"
-    fi
-
-    if (( watcher_active )); then
-      # Write a setup+run script executed INSIDE the tmux pane.
-      # Avoids -d (detached) new-session which crashes the server on some setups.
-      # The script splits the watcher from within the running pane (has proper terminal),
-      # runs claude (Layer 1: inline kill-pane on exit), watcher uses self-watchdog (Layer 3).
-      local tmpscript
-      tmpscript="$(mktemp /tmp/claude-tmux-cmd.XXXXXX)"
-      chmod +x "$tmpscript"
-
-      local _wq _cq _sq _tq _ca _sp
-      _wq="$(printf %q "$watcher_script")"
-      _cq="$(printf %q "$PWD")"
-      _sq="$(printf %q "$stamp_path")"
-      _tq="$(printf %q "$tmpscript")"
-      _ca="${(j: :)${(q-)_CLAUDE_TMUX_WATCH_ARGS}}"
-      _sp="$(printf %q "$stamp_dir/.watcher-state")"
-
-      cat > "$tmpscript" << ENDSCRIPT
-#!/bin/sh
-_cp=\$(tmux display-message -p '#{pane_id}')
-_wp=\$(tmux split-window -h -p 30 -P -F '#{pane_id}' ${_wq} --cwd ${_cq} --claude-pane "\$_cp")
-tmux select-pane -t "\$_cp"
-printf '%s|%s|%s\n' "\$_cp" "\$_wp" ${_cq} > ${_sp}
-tmux bind-key l run-shell 'claude-tmux watch toggle-pane'
-command claude ${_ca}
-echo "\$(date +%s)" > ${_sq}
-tmux kill-pane -t "\$_wp" 2>/dev/null
-tmux unbind-key l 2>/dev/null
-rm -f ${_sp} ${_tq}
-ENDSCRIPT
-
-      # No -d: session attaches immediately (same as original code)
-      tmux new-session -s "$new_key" "$tmpscript"
-    else
-      # Existing behavior — use sanitized args (--watch/--no-watch already stripped)
-      local claude_args=${(q-)_CLAUDE_TMUX_WATCH_ARGS}
-      tmux new-session -s "$new_key" "command claude $claude_args; echo \$(date +%s) > \"$stamp_path\""
-    fi
-    echo $(date +%s) > "$stamp_path"
+    local claude_args=${(q-)@}
+    tmux new-session -s "$new_key" "command claude $claude_args; echo \$(date +%s) > \"$stamp_dir/$new_key\""
+    echo $(date +%s) > "$stamp_dir/$new_key"
   else
-    # Inside tmux: watcher split on current window
-    _claude_tmux_parse_watch_flag "$@"
-    local watcher_script; watcher_script="$(_claude_tmux_watch_script)"
-
-    local watcher_active=0
-    if _claude_tmux_watch_enabled \
-       && _claude_tmux_version_ok \
-       && [[ -x "$watcher_script" ]]; then
-      watcher_active=1
-    elif _claude_tmux_watch_enabled; then
-      print -u2 "claude-tmux: watcher requested but unavailable; launching claude without watcher"
-    fi
-
-    if (( watcher_active )); then
-      local claude_pane="$TMUX_PANE"
-      local session
-      session="$(tmux display-message -p '#{session_name}')"
-
-      # Split right 30%, capture watcher pane id, pass --claude-pane (Layer 3)
-      local watcher_pane
-      watcher_pane="$(tmux split-window -h -p 30 -t "$claude_pane" -P -F '#{pane_id}' \
-        "$watcher_script --cwd $(printf %q "$PWD") --claude-pane $claude_pane")"
-      tmux select-pane -t "$claude_pane"
-      printf '%s|%s|%s\n' "$claude_pane" "$watcher_pane" "$PWD" > "$stamp_dir/.watcher-state"
-      tmux bind-key l run-shell 'claude-tmux watch toggle-pane'
-
-      # Layer 2: window-scope hook + #{hook_pane} guard + self-unregister
-      _claude_tmux_attach_cleanup_hook "$session" "$claude_pane" "$watcher_pane"
-
-      # Layer 1 (this branch): trap EXIT covers graceful exits
-      trap "
-        tmux kill-pane -t '$watcher_pane' 2>/dev/null
-        tmux set-hook -wu -t '$session' pane-exited 2>/dev/null
-        tmux unbind-key l 2>/dev/null
-        rm -f '$stamp_dir/.watcher-state'
-      " EXIT INT TERM
-
-      command claude "${_CLAUDE_TMUX_WATCH_ARGS[@]}"
-
-      trap - EXIT INT TERM
-      tmux kill-pane -t "$watcher_pane" 2>/dev/null
-      tmux set-hook -wu -t "$session" pane-exited 2>/dev/null
-      tmux unbind-key l 2>/dev/null
-      rm -f "$stamp_dir/.watcher-state"
-    else
-      command claude "${_CLAUDE_TMUX_WATCH_ARGS[@]}"
-    fi
+    command claude "$@"
   fi
 }
 

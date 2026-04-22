@@ -9,8 +9,6 @@ INSTALL_DIR="${HOME}/.local/share/claude-tmux-session"
 INSTALL_PATH="${INSTALL_DIR}/claude-tmux-session.zsh"
 BIN_DIR="${HOME}/.local/bin"
 BIN_PATH="${BIN_DIR}/claude-tmux"
-BIN_WATCH_URL="https://raw.githubusercontent.com/kungbi/claude-tmux-session/main/bin/claude-watch"
-BIN_WATCH_PATH="${BIN_DIR}/claude-watch"
 ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
 SOURCE_LINE="source \"${INSTALL_PATH}\""
 PATH_LINE="export PATH=\"\${HOME}/.local/bin:\${PATH}\""
@@ -29,18 +27,6 @@ if ! command -v claude &>/dev/null; then
   exit 1
 fi
 
-# tmux version check (warn only, do not abort)
-_tmux_version_warn() {
-  local v major minor
-  v=$(tmux -V 2>/dev/null | awk '{print $2}')
-  v="${v%%[!0-9.]*}"
-  major="${v%%.*}"; minor="${v#*.}"; minor="${minor%%.*}"
-  if ! { (( major > 2 )) || (( major == 2 && minor >= 4 )); }; then
-    _warn "tmux 2.4+ required for the optional split-pane watcher; basic claude-tmux features will work, but --watch will no-op."
-  fi
-}
-_tmux_version_warn
-
 _info "다운로드 중..."
 mkdir -p "$INSTALL_DIR" "$BIN_DIR"
 
@@ -54,12 +40,6 @@ if ! curl -fsSL "$BIN_URL" -o "$BIN_PATH"; then
   exit 1
 fi
 chmod +x "$BIN_PATH"
-
-if ! curl -fsSL "$BIN_WATCH_URL" -o "$BIN_WATCH_PATH"; then
-  _warn "claude-watch 다운로드 실패 (watcher 기능 비활성화됨; 나머지 기능은 정상 동작)"
-else
-  chmod +x "$BIN_WATCH_PATH"
-fi
 
 if grep -qF "$PATH_LINE" "$ZSHRC" 2>/dev/null || [[ ":$PATH:" == *":${BIN_DIR}:"* ]]; then
   true
