@@ -1,51 +1,9 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="1.1.0"
-_CLAUDE_TMUX_SCRIPT_URL="https://raw.githubusercontent.com/kungbi/claude-tmux-session/main/claude-tmux-session.zsh"
-_CLAUDE_TMUX_LOCAL="${HOME}/.local/share/claude-tmux-session/claude-tmux-session.zsh"
-
-_claude_tmux_update() {
-  local tmp
-  tmp=$(mktemp /tmp/claude-tmux-session.XXXXXX.zsh)
-  printf '\033[1;36m[claude-tmux]\033[0m 업데이트 확인 중...\n'
-
-  if ! curl -fsSL "$_CLAUDE_TMUX_SCRIPT_URL" -o "$tmp" 2>/dev/null; then
-    printf '\033[1;31m[claude-tmux]\033[0m 다운로드 실패\n'
-    rm -f "$tmp"
-    return 1
-  fi
-
-  local new_version
-  new_version=$(grep '^_CLAUDE_TMUX_VERSION=' "$tmp" | cut -d'"' -f2)
-
-  if [[ "$new_version" == "$_CLAUDE_TMUX_VERSION" ]]; then
-    printf '\033[1;36m[claude-tmux]\033[0m 이미 최신 버전입니다 (%s)\n' "$_CLAUDE_TMUX_VERSION"
-    rm -f "$tmp"
-    return 0
-  fi
-
-  mkdir -p "${_CLAUDE_TMUX_LOCAL:h}"
-  mv "$tmp" "$_CLAUDE_TMUX_LOCAL"
-  source "$_CLAUDE_TMUX_LOCAL"
-
-  printf '\033[1;32m[claude-tmux]\033[0m 업데이트 완료: %s → %s\n' "$_CLAUDE_TMUX_VERSION" "$new_version"
-  printf '\033[1;33m[claude-tmux]\033[0m 영구 적용을 위해 ~/.zshrc의 source 라인을 변경하세요:\n'
-  printf '  source "%s"\n' "$_CLAUDE_TMUX_LOCAL"
-}
+_CLAUDE_TMUX_VERSION="1.2.0"
 
 _claude_tmux() {
-  case "$1" in
-    --update)
-      _claude_tmux_update
-      return
-      ;;
-    --version)
-      printf 'claude-tmux-session %s\n' "$_CLAUDE_TMUX_VERSION"
-      return
-      ;;
-  esac
-
   local dir_hash="claude_$(echo "$PWD" | md5 -q | head -c 8)"
   local stamp_dir="${HOME}/.cache/claude-sessions"
   local session_ttl=300
