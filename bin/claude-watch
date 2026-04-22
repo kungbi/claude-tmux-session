@@ -51,7 +51,9 @@ while true; do
       find . -type f -mmin -10 \
         -not -path './.git/*' \
         -not -path './node_modules/*' \
-        2>/dev/null | head -15
+        -not -path './.omc/*' \
+        -not -path './.cache/*' \
+        2>/dev/null | LC_ALL=C tr -d '\000-\010\013-\037' | head -15
     )
   else
     new_content=$(
@@ -61,13 +63,15 @@ while true; do
       find . -type f -mmin -10 \
         -not -path './.git/*' \
         -not -path './node_modules/*' \
-        2>/dev/null | head -15
+        -not -path './.omc/*' \
+        -not -path './.cache/*' \
+        2>/dev/null | LC_ALL=C tr -d '\000-\010\013-\037' | head -15
     )
   fi
 
   # Only redraw when content changes — eliminates flicker during idle
   if [ "$new_content" != "$prev_content" ]; then
-    printf '\033[H\033[J'
+    printf '\033[2J\033[H'
     echo "~ claude-watch | $(basename "${cwd:-$PWD}") | $(date +%H:%M:%S)"
     echo ""
     printf '%s\n' "$new_content"
