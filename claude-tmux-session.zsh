@@ -1,7 +1,7 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="0.3.0"
+_CLAUDE_TMUX_VERSION="0.3.1"
 
 # Returns 0 if watcher should be active for this invocation.
 # Precedence: --no-watch flag > --watch flag > persistent stamp.
@@ -186,8 +186,8 @@ _claude_tmux() {
       # Step 8: Attach
       tmux attach-session -t "$new_key"
     else
-      # Existing behavior — unchanged
-      local claude_args=${(q-)@}
+      # Existing behavior — use sanitized args (--watch/--no-watch already stripped)
+      local claude_args=${(q-)_CLAUDE_TMUX_WATCH_ARGS}
       tmux new-session -s "$new_key" "command claude $claude_args; echo \$(date +%s) > \"$stamp_path\""
     fi
     echo $(date +%s) > "$stamp_path"
