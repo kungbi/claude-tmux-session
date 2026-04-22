@@ -14,6 +14,8 @@ _Run `claude`. Close your terminal. Come back. Pick up where you left off._
 
 [Installation](#installation) • [Usage](#usage) • [CLI Reference](#cli)
 
+<img width="620" alt="Gemini_Generated_Image_n13xuwn13xuwn13x" src="https://github.com/user-attachments/assets/a399f296-841f-4b01-a130-d9c7a97a74f9" />
+
 ---
 
 ## Features
