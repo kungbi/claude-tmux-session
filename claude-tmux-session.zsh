@@ -15,6 +15,16 @@ _claude_tmux() {
     return
   fi
 
+  # bypass tmux for dev-channel invocations (e.g. --dangerously-load-development-channels)
+  # those servers are bound to the current shell environment and won't survive a new tmux session
+  local _arg
+  for _arg in "$@"; do
+    if [[ "$_arg" == --dangerously-load-development-channels* ]]; then
+      command claude "$@"
+      return
+    fi
+  done
+
   if [[ -z "$TMUX" ]]; then
     local s stamp_file sname all_sessions valid_sessions=() now elapsed saved
     all_sessions=($(tmux list-sessions -F "#{session_name}" 2>/dev/null | grep "^${dir_hash}"))
