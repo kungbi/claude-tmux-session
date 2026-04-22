@@ -75,22 +75,30 @@ _ctm_status() {
     printf 'No active sessions\n'
     return
   fi
-  local now s saved elapsed mins secs
+  local now s created elapsed hrs mins secs attached
   now=$(date +%s)
   for s in "${sessions[@]}"; do
-    local stamp_file="${_CLAUDE_TMUX_STAMP_DIR}/$s"
-    if [[ -f "$stamp_file" ]]; then
-      saved=$(< "$stamp_file")
-      elapsed=$((now - saved))
-      mins=$(( elapsed / 60 ))
+    created=$(tmux display-message -t "$s" -p "#{session_created}" 2>/dev/null)
+    attached=$(tmux display-message -t "$s" -p "#{session_attached}" 2>/dev/null)
+    if [[ -n "$created" ]]; then
+      elapsed=$((now - created))
+      hrs=$(( elapsed / 3600 ))
+      mins=$(( (elapsed % 3600) / 60 ))
       secs=$(( elapsed % 60 ))
-      if (( mins > 0 )); then
-        printf '%s (%d min ago)\n' "$s" "$mins"
+      if (( hrs > 0 )); then
+        local age="${hrs}h ${mins}m"
+      elif (( mins > 0 )); then
+        local age="${mins}m ${secs}s"
       else
-        printf '%s (%d sec ago)\n' "$s" "$secs"
+        local age="${secs}s"
       fi
     else
-      printf '%s (active)\n' "$s"
+      local age="unknown"
+    fi
+    if [[ "$attached" == "1" ]]; then
+      printf '%s (running, %s elapsed)\n' "$s" "$age"
+    else
+      printf '%s (idle, %s elapsed)\n' "$s" "$age"
     fi
   done
 }
