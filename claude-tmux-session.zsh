@@ -1,7 +1,7 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="0.3.1"
+_CLAUDE_TMUX_VERSION="0.3.2"
 
 # Returns 0 if watcher should be active for this invocation.
 # Precedence: --no-watch flag > --watch flag > persistent stamp.
@@ -231,7 +231,7 @@ _claude_tmux() {
       tmux kill-pane -t "$watcher_pane" 2>/dev/null
       tmux set-hook -wu -t "$session" pane-exited 2>/dev/null
     else
-      command claude "$@"
+      command claude "${_CLAUDE_TMUX_WATCH_ARGS[@]}"
     fi
   fi
 }
