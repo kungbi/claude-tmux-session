@@ -30,8 +30,6 @@ _claude_tmux_update() {
   source "$_CLAUDE_TMUX_LOCAL"
 
   printf '\033[1;32m[claude-tmux]\033[0m 업데이트 완료: %s → %s\n' "$_CLAUDE_TMUX_VERSION" "$new_version"
-  printf '\033[1;33m[claude-tmux]\033[0m 영구 적용을 위해 ~/.zshrc의 source 라인을 변경하세요:\n'
-  printf '  source "%s"\n' "$_CLAUDE_TMUX_LOCAL"
 }
 
 _claude_tmux() {
