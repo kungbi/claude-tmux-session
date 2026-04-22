@@ -232,7 +232,7 @@ case "$1" in
   update|--update)
     _ctm_update
     ;;
-  ls|status)
+  ls)
     _ctm_status
     ;;
   clean)
@@ -256,7 +256,6 @@ case "$1" in
     printf '  version      print current version\n'
     printf '  update       update to latest version\n'
     printf '  ls           list active sessions\n'
-    printf '  status       alias for ls\n'
     printf '  clean        remove expired stamp files\n'
     printf '  alias <name> register a short alias (e.g. ct)\n'
     printf '  kill [n]     kill idle sessions (or session n)\n'
