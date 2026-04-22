@@ -1,7 +1,7 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="0.3.3"
+_CLAUDE_TMUX_VERSION="0.3.4"
 
 # Capture script directory at source time (%x = currently sourced file path).
 _CLAUDE_TMUX_SCRIPT_DIR="${${(%):-%x}:A:h}"
@@ -171,7 +171,7 @@ _claude_tmux() {
       # Step 6: Write real claude command to temp file to avoid shell quoting issues
       # Layer 1 — trailing inline kill-pane after claude exits
       local tmpscript
-      tmpscript="$(mktemp /tmp/claude-tmux-cmd.XXXXXX.sh)"
+      tmpscript="$(mktemp /tmp/claude-tmux-cmd.XXXXXX)"
       {
         printf '#!/bin/sh\n'
         printf 'command claude %s\n' "${(j: :)${(q-)_CLAUDE_TMUX_WATCH_ARGS}}"
