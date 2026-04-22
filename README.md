@@ -27,10 +27,16 @@ brew tap kungbi/claude-tmux
 brew install claude-tmux-session
 ```
 
-Then add to `~/.zshrc`:
+Add to `~/.zshrc` (also shown in post-install instructions):
 
 ```zsh
 source "$(brew --prefix)/share/claude-tmux-session/claude-tmux-session.zsh"
+```
+
+Then apply:
+
+```zsh
+source ~/.zshrc
 ```
 
 ### Manual
@@ -74,7 +80,7 @@ claude-tmux clean     # remove expired stamp files
 
 ## Aliases
 
-The plugin wraps the `claude` command. If you have aliases like `cc` or `ccc`, wrap them as well:
+Any alias that calls `claude` automatically goes through the session manager — no extra steps needed:
 
 ```zsh
 alias cc='claude --dangerously-skip-permissions'
@@ -83,7 +89,7 @@ alias ccc='claude --dangerously-skip-permissions --channels your-channel'
 
 ## Tip: Hide tmux status bar
 
-If you don't want the tmux status bar to appear, add this to `~/.tmux.conf`:
+Add to `~/.tmux.conf`:
 
 ```
 set -g status off
