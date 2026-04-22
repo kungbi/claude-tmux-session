@@ -1,7 +1,7 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="0.2.14"
+_CLAUDE_TMUX_VERSION="0.2.15"
 
 _claude_tmux() {
   local dir_hash="claude_$(echo "$PWD" | md5 -q | head -c 8)"
@@ -14,16 +14,6 @@ _claude_tmux() {
     command claude "$@"
     return
   fi
-
-  # bypass tmux for dev-channel invocations (e.g. --dangerously-load-development-channels)
-  # those servers are bound to the current shell environment and won't survive a new tmux session
-  local _arg
-  for _arg in "$@"; do
-    if [[ "$_arg" == --dangerously-load-development-channels* ]]; then
-      command claude "$@"
-      return
-    fi
-  done
 
   if [[ -z "$TMUX" ]]; then
     local s stamp_file sname all_sessions valid_sessions=() now elapsed saved
