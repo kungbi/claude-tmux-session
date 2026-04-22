@@ -10,6 +10,11 @@ _claude_tmux() {
 
   mkdir -p "$stamp_dir"
 
+  if [[ -f "${stamp_dir}/.disabled" ]]; then
+    command claude "$@"
+    return
+  fi
+
   if [[ -z "$TMUX" ]]; then
     local s stamp_file sname all_sessions valid_sessions=() now elapsed saved
     all_sessions=($(tmux list-sessions -F "#{session_name}" 2>/dev/null | grep "^${dir_hash}"))
