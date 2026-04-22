@@ -1,7 +1,7 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="0.3.7"
+_CLAUDE_TMUX_VERSION="0.3.8"
 
 # Capture script directory at source time (%x = currently sourced file path).
 _CLAUDE_TMUX_SCRIPT_DIR="${${(%):-%x}:A:h}"

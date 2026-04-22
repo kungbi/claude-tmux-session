@@ -36,7 +36,8 @@ while true; do
     fi
   fi
 
-  clear
+  # Move cursor to top-left and clear to end — no scroll flash
+  printf '\033[H\033[J'
 
   # Header
   echo "~ claude-watch | $(basename "${cwd:-$PWD}") | $(date +%H:%M:%S)"
