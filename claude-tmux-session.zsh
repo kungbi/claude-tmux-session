@@ -1,7 +1,7 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="0.3.9"
+_CLAUDE_TMUX_VERSION="0.4.0"
 
 # Capture script directory at source time (%x = currently sourced file path).
 _CLAUDE_TMUX_SCRIPT_DIR="${${(%):-%x}:A:h}"
@@ -157,22 +157,26 @@ _claude_tmux() {
       tmpscript="$(mktemp /tmp/claude-tmux-cmd.XXXXXX)"
       chmod +x "$tmpscript"
 
-      local _wq _cq _sq _tq _ca
+      local _wq _cq _sq _tq _ca _sp
       _wq="$(printf %q "$watcher_script")"
       _cq="$(printf %q "$PWD")"
       _sq="$(printf %q "$stamp_path")"
       _tq="$(printf %q "$tmpscript")"
       _ca="${(j: :)${(q-)_CLAUDE_TMUX_WATCH_ARGS}}"
+      _sp="$(printf %q "$stamp_dir/.watcher-state")"
 
       cat > "$tmpscript" << ENDSCRIPT
 #!/bin/sh
 _cp=\$(tmux display-message -p '#{pane_id}')
 _wp=\$(tmux split-window -h -p 30 -P -F '#{pane_id}' ${_wq} --cwd ${_cq} --claude-pane "\$_cp")
 tmux select-pane -t "\$_cp"
+printf '%s|%s|%s\n' "\$_cp" "\$_wp" ${_cq} > ${_sp}
+tmux bind-key l run-shell 'claude-tmux watch toggle-pane'
 command claude ${_ca}
 echo "\$(date +%s)" > ${_sq}
 tmux kill-pane -t "\$_wp" 2>/dev/null
-rm -f ${_tq}
+tmux unbind-key l 2>/dev/null
+rm -f ${_sp} ${_tq}
 ENDSCRIPT
 
       # No -d: session attaches immediately (same as original code)
@@ -207,6 +211,8 @@ ENDSCRIPT
       watcher_pane="$(tmux split-window -h -p 30 -t "$claude_pane" -P -F '#{pane_id}' \
         "$watcher_script --cwd $(printf %q "$PWD") --claude-pane $claude_pane")"
       tmux select-pane -t "$claude_pane"
+      printf '%s|%s|%s\n' "$claude_pane" "$watcher_pane" "$PWD" > "$stamp_dir/.watcher-state"
+      tmux bind-key l run-shell 'claude-tmux watch toggle-pane'
 
       # Layer 2: window-scope hook + #{hook_pane} guard + self-unregister
       _claude_tmux_attach_cleanup_hook "$session" "$claude_pane" "$watcher_pane"
@@ -215,6 +221,8 @@ ENDSCRIPT
       trap "
         tmux kill-pane -t '$watcher_pane' 2>/dev/null
         tmux set-hook -wu -t '$session' pane-exited 2>/dev/null
+        tmux unbind-key l 2>/dev/null
+        rm -f '$stamp_dir/.watcher-state'
       " EXIT INT TERM
 
       command claude "${_CLAUDE_TMUX_WATCH_ARGS[@]}"
@@ -222,6 +230,8 @@ ENDSCRIPT
       trap - EXIT INT TERM
       tmux kill-pane -t "$watcher_pane" 2>/dev/null
       tmux set-hook -wu -t "$session" pane-exited 2>/dev/null
+      tmux unbind-key l 2>/dev/null
+      rm -f "$stamp_dir/.watcher-state"
     else
       command claude "${_CLAUDE_TMUX_WATCH_ARGS[@]}"
     fi

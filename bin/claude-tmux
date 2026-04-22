@@ -257,6 +257,32 @@ _ctm_clean() {
   printf '%d stamp file(s) cleaned up\n' "$count"
 }
 
+_ctm_watch_toggle_pane() {
+  local state_file="${_CLAUDE_TMUX_STAMP_DIR}/.watcher-state"
+  if [ ! -f "$state_file" ]; then
+    printf '\033[1;31m[claude-tmux]\033[0m no active watcher session\n' >&2
+    return 1
+  fi
+  local claude_pane watcher_pane cwd
+  IFS='|' read -r claude_pane watcher_pane cwd < "$state_file"
+
+  if tmux list-panes -a -F '#{pane_id}' 2>/dev/null | grep -qF "$watcher_pane"; then
+    # Watcher visible → hide it
+    tmux kill-pane -t "$watcher_pane" 2>/dev/null
+  else
+    # Watcher hidden → respawn it
+    local install_path watch_script new_watcher
+    install_path=$(_ctm_install_path)
+    [ -z "$install_path" ] && { printf '\033[1;31m[claude-tmux]\033[0m cannot find claude-watch\n' >&2; return 1; }
+    watch_script="$(dirname "$install_path")/bin/claude-watch"
+    [ ! -x "$watch_script" ] && { printf '\033[1;31m[claude-tmux]\033[0m claude-watch not found\n' >&2; return 1; }
+    new_watcher=$(tmux split-window -h -p 30 -t "$claude_pane" -P -F '#{pane_id}' \
+      "$watch_script" --cwd "$cwd" --claude-pane "$claude_pane" 2>/dev/null)
+    tmux select-pane -t "$claude_pane" 2>/dev/null
+    printf '%s|%s|%s\n' "$claude_pane" "$new_watcher" "$cwd" > "$state_file"
+  fi
+}
+
 _ctm_watch() {
   local stamp_dir="${_CLAUDE_TMUX_STAMP_DIR}"
   case "$1" in
@@ -276,8 +302,11 @@ _ctm_watch() {
         printf 'watcher: disabled\n'
       fi
       ;;
+    toggle-pane)
+      _ctm_watch_toggle_pane
+      ;;
     *)
-      printf 'usage: claude-tmux watch [on|off|status]\n' >&2
+      printf 'usage: claude-tmux watch [on|off|status|toggle-pane]\n' >&2
       return 2
       ;;
   esac
