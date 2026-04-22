@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tarball SHA256
+        id: sha
+        run: |
+          sleep 5
+          URL="https://github.com/kungbi/claude-tmux-session/archive/refs/tags/${{ github.ref_name }}.tar.gz"
+          SHA256=$(curl -sL "$URL" | sha256sum | cut -d' ' -f1)
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+
+      - name: Update Homebrew formula
+        run: |
+          git clone "https://x-access-token:${{ secrets.TAP_TOKEN }}@github.com/kungbi/homebrew-claude-tmux.git" tap
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          VERSION="${{ github.ref_name }}"
+          SHA256="${{ steps.sha.outputs.sha256 }}"
+          NEW_URL="https://github.com/kungbi/claude-tmux-session/archive/refs/tags/${VERSION}.tar.gz"
+
+          sed -i "s|url \".*\"|url \"${NEW_URL}\"|" Formula/claude-tmux-session.rb
+          sed -i "s|sha256 \".*\"|sha256 \"${SHA256}\"|" Formula/claude-tmux-session.rb
+
+          git add Formula/claude-tmux-session.rb
+          git commit -m "chore: update formula to ${VERSION}"
+          git push
