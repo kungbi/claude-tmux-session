@@ -103,6 +103,59 @@ _ctm_status() {
   done
 }
 
+_ctm_kill() {
+  local sessions
+  sessions=($(tmux list-sessions -F "#{session_name}" 2>/dev/null | grep "^claude_"))
+  if (( ${#sessions[@]} == 0 )); then
+    printf 'No active sessions\n'
+    return
+  fi
+
+  if [[ -n "$1" ]]; then
+    local target="${sessions[$1]}"
+    if [[ -z "$target" ]]; then
+      printf 'Session %s not found\n' "$1" >&2
+      return 1
+    fi
+    printf 'Kill session %s? [y/N]: ' "$target"
+    read -k 1 confirm
+    printf '\n'
+    if [[ "$confirm" =~ ^[yY]$ ]]; then
+      tmux kill-session -t "$target" 2>/dev/null
+      rm -f "${_CLAUDE_TMUX_STAMP_DIR}/$target"
+      printf 'Killed: %s\n' "$target"
+    else
+      printf 'Canceled.\n'
+    fi
+    return
+  fi
+
+  local idle_sessions=()
+  local attached
+  for s in "${sessions[@]}"; do
+    attached=$(tmux display-message -t "$s" -p "#{session_attached}" 2>/dev/null)
+    [[ "$attached" != "1" ]] && idle_sessions+=("$s")
+  done
+
+  if (( ${#idle_sessions[@]} == 0 )); then
+    printf 'No idle sessions to kill\n'
+    return
+  fi
+
+  printf 'Kill %d idle session(s)? [y/N]: ' "${#idle_sessions[@]}"
+  read -k 1 confirm
+  printf '\n'
+  if [[ "$confirm" =~ ^[yY]$ ]]; then
+    for s in "${idle_sessions[@]}"; do
+      tmux kill-session -t "$s" 2>/dev/null
+      rm -f "${_CLAUDE_TMUX_STAMP_DIR}/$s"
+      printf 'Killed: %s\n' "$s"
+    done
+  else
+    printf 'Canceled.\n'
+  fi
+}
+
 _ctm_alias() {
   local zshrc="${ZDOTDIR:-$HOME}/.zshrc"
   if [[ -z "$1" ]]; then
@@ -188,6 +241,9 @@ case "$1" in
   alias)
     _ctm_alias "$2"
     ;;
+  kill)
+    _ctm_kill "$2"
+    ;;
   on)
     _ctm_on
     ;;
@@ -203,6 +259,7 @@ case "$1" in
     printf '  status       alias for ls\n'
     printf '  clean        remove expired stamp files\n'
     printf '  alias <name> register a short alias (e.g. ct)\n'
+    printf '  kill [n]     kill idle sessions (or session n)\n'
     printf '  on           enable session manager\n'
     printf '  off          disable session manager\n'
     ;;
