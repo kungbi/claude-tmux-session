@@ -61,9 +61,13 @@ Press a number to resume, `n` for a new session, or `q` to cancel.
 ```zsh
 claude-tmux version        # show current version
 claude-tmux update         # update to latest version
-claude-tmux ls             # list active sessions
+claude-tmux ls             # list active sessions with index and elapsed time
+claude-tmux kill           # kill all idle sessions (with confirmation)
+claude-tmux kill <n>       # kill session by index number
 claude-tmux clean          # remove expired stamp files
 claude-tmux alias <name>   # register a short alias (e.g. ct)
+claude-tmux on             # enable session manager
+claude-tmux off            # disable session manager
 ```
 
 `claude-tmux update` runs `brew update && brew upgrade` when installed via Homebrew, or downloads directly for manual installs.
