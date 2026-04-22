@@ -1,52 +1,97 @@
 # claude-tmux-session.zsh
-# Claude Code tmux session manager
-#
-# Usage:
-#   source <(curl -s https://raw.githubusercontent.com/kungbi/claude-tmux-session/main/claude-tmux-session.zsh)
-#
-# Features:
-#   - Runs claude inside a tmux session automatically
-#   - Lists previous sessions when returning to the same directory within 5 min
-#   - Supports multiple sessions per directory
-#   - Session auto-expires after 5 minutes of inactivity
+# Claude Code tmux session manager (macOS)
+
+_CLAUDE_TMUX_VERSION="1.1.0"
+_CLAUDE_TMUX_SCRIPT_URL="https://raw.githubusercontent.com/kungbi/claude-tmux-session/main/claude-tmux-session.zsh"
+_CLAUDE_TMUX_LOCAL="${HOME}/.local/share/claude-tmux-session/claude-tmux-session.zsh"
+
+_claude_tmux_update() {
+  local tmp
+  tmp=$(mktemp /tmp/claude-tmux-session.XXXXXX.zsh)
+  printf '\033[1;36m[claude-tmux]\033[0m 업데이트 확인 중...\n'
+
+  if ! curl -fsSL "$_CLAUDE_TMUX_SCRIPT_URL" -o "$tmp" 2>/dev/null; then
+    printf '\033[1;31m[claude-tmux]\033[0m 다운로드 실패\n'
+    rm -f "$tmp"
+    return 1
+  fi
+
+  local new_version
+  new_version=$(grep '^_CLAUDE_TMUX_VERSION=' "$tmp" | cut -d'"' -f2)
+
+  if [[ "$new_version" == "$_CLAUDE_TMUX_VERSION" ]]; then
+    printf '\033[1;36m[claude-tmux]\033[0m 이미 최신 버전입니다 (%s)\n' "$_CLAUDE_TMUX_VERSION"
+    rm -f "$tmp"
+    return 0
+  fi
+
+  mkdir -p "${_CLAUDE_TMUX_LOCAL:h}"
+  mv "$tmp" "$_CLAUDE_TMUX_LOCAL"
+  source "$_CLAUDE_TMUX_LOCAL"
+
+  printf '\033[1;32m[claude-tmux]\033[0m 업데이트 완료: %s → %s\n' "$_CLAUDE_TMUX_VERSION" "$new_version"
+  printf '\033[1;33m[claude-tmux]\033[0m 영구 적용을 위해 ~/.zshrc의 source 라인을 변경하세요:\n'
+  printf '  source "%s"\n' "$_CLAUDE_TMUX_LOCAL"
+}
 
 _claude_tmux() {
+  case "$1" in
+    --update)
+      _claude_tmux_update
+      return
+      ;;
+    --version)
+      printf 'claude-tmux-session %s\n' "$_CLAUDE_TMUX_VERSION"
+      return
+      ;;
+  esac
+
   local dir_hash="claude_$(echo "$PWD" | md5 -q | head -c 8)"
   local stamp_dir="${HOME}/.cache/claude-sessions"
   local session_ttl=300
 
   mkdir -p "$stamp_dir"
 
-  if [ -z "$TMUX" ]; then
-    local all_sessions valid_sessions=() now elapsed saved
+  if [[ -z "$TMUX" ]]; then
+    local s stamp_file sname all_sessions valid_sessions=() now elapsed saved
     all_sessions=($(tmux list-sessions -F "#{session_name}" 2>/dev/null | grep "^${dir_hash}"))
     now=$(date +%s)
 
+    # 고아 stamp 파일 정리 (tmux 세션 없이 stamp만 남은 경우)
+    for stamp_file in "$stamp_dir"/${dir_hash}_*(N); do
+      sname="${stamp_file##*/}"
+      tmux has-session -t "$sname" 2>/dev/null || rm -f "$stamp_file"
+    done
+
     for s in "${all_sessions[@]}"; do
-      saved=0
-      [[ -f "$stamp_dir/$s" ]] && saved=$(cat "$stamp_dir/$s")
-      elapsed=$((now - saved))
-      if (( elapsed < session_ttl )) || [[ ! -f "$stamp_dir/$s" ]]; then
-        valid_sessions+=("$s")
-      else
-        tmux kill-session -t "$s" 2>/dev/null
-        rm -f "$stamp_dir/$s"
+      if [[ -f "$stamp_dir/$s" ]]; then
+        saved=$(< "$stamp_dir/$s")
+        elapsed=$((now - saved))
+        if (( elapsed >= session_ttl )); then
+          tmux kill-session -t "$s" 2>/dev/null
+          rm -f "$stamp_dir/$s"
+          continue
+        fi
       fi
+      valid_sessions+=("$s")
     done
 
     if (( ${#valid_sessions[@]} > 0 )); then
       printf '\033[1;36m[claude]\033[0m 세션 목록: %s\n' "${PWD/#$HOME/~}"
       local i=1
       for s in "${valid_sessions[@]}"; do
-        saved=0
-        [[ -f "$stamp_dir/$s" ]] && saved=$(cat "$stamp_dir/$s")
-        elapsed=$((now - saved))
-        local mins=$(( elapsed / 60 ))
-        local secs=$(( elapsed % 60 ))
-        if (( mins > 0 )); then
-          printf '  [%d] %d분 전\n' $i $mins
+        if [[ -f "$stamp_dir/$s" ]]; then
+          saved=$(< "$stamp_dir/$s")
+          elapsed=$((now - saved))
+          local mins=$(( elapsed / 60 ))
+          local secs=$(( elapsed % 60 ))
+          if (( mins > 0 )); then
+            printf '  [%d] %d분 전\n' $i $mins
+          else
+            printf '  [%d] %d초 전\n' $i $secs
+          fi
         else
-          printf '  [%d] %d초 전\n' $i $secs
+          printf '  [%d] 활성 세션\n' $i
         fi
         i=$((i + 1))
       done
@@ -56,7 +101,7 @@ _claude_tmux() {
       read -k 1 choice
       printf '\n'
 
-      if [[ "$choice" == "q" || "$choice" == "Q" ]]; then
+      if [[ "$choice" =~ ^[qQ]$ ]]; then
         return
       fi
 
@@ -68,8 +113,9 @@ _claude_tmux() {
       fi
     fi
 
-    local new_key="${dir_hash}_$(date +%s | tail -c 5)"
-    tmux new-session -s "$new_key" "command claude $*; echo \$(date +%s) > \"$stamp_dir/$new_key\""
+    local new_key="${dir_hash}_$(date +%s)_$$"
+    local claude_args=${(q-)@}
+    tmux new-session -s "$new_key" "command claude $claude_args; echo \$(date +%s) > \"$stamp_dir/$new_key\""
     echo $(date +%s) > "$stamp_dir/$new_key"
   else
     command claude "$@"
