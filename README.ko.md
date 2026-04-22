@@ -1,10 +1,20 @@
+[English](README.md) | 한국어
+
 # claude-tmux-session
 
-[English README](README.md)
+[![GitHub stars](https://img.shields.io/github/stars/kungbi/claude-tmux-session?style=flat&color=yellow)](https://github.com/kungbi/claude-tmux-session/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Homebrew](https://img.shields.io/badge/Homebrew-available-orange?logo=homebrew)](https://github.com/kungbi/homebrew-claude-tmux)
 
-zsh용 Claude Code tmux 세션 매니저 (macOS).
+> zsh용 Claude Code tmux 세션 매니저 (macOS).
 
-`claude` 실행 시 자동으로 tmux 세션 안에서 시작하고, 5분 이내에 같은 디렉토리로 돌아오면 이전 세션을 이어서 사용할 수 있습니다.
+**Claude Code 세션을 다시는 잃어버리지 마세요.**
+
+_`claude` 실행 → 터미널 닫기 → 돌아오기 → 이어서 작업._
+
+[설치](#설치) • [사용법](#사용법) • [CLI 레퍼런스](#cli)
+
+---
 
 ## 기능
 
@@ -110,3 +120,11 @@ source ~/.zshrc
 ```
 set -g status off
 ```
+
+---
+
+<div align="center">
+
+**세션을 잃지 마세요. 흐름을 잃지 마세요.**
+
+</div>

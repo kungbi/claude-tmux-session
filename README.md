@@ -1,17 +1,27 @@
+English | [한국어](README.ko.md)
+
 # claude-tmux-session
 
-[한국어 README](README.ko.md)
+[![GitHub stars](https://img.shields.io/github/stars/kungbi/claude-tmux-session?style=flat&color=yellow)](https://github.com/kungbi/claude-tmux-session/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Homebrew](https://img.shields.io/badge/Homebrew-available-orange?logo=homebrew)](https://github.com/kungbi/homebrew-claude-tmux)
 
-Claude Code tmux session manager for zsh (macOS).
+> Claude Code tmux session manager for zsh (macOS).
 
-Automatically runs `claude` inside a tmux session and offers to resume your previous session when you return to the same directory within 5 minutes.
+**Never lose a Claude Code session again.**
+
+_Run `claude`. Close your terminal. Come back. Pick up where you left off._
+
+[Installation](#installation) • [Usage](#usage) • [CLI Reference](#cli)
+
+---
 
 ## Features
 
-- Runs `claude` inside a named tmux session automatically
-- Lists previous sessions when reopening in the same directory within 5 minutes
+- Automatically runs `claude` inside a named tmux session
+- Lists resumable sessions when reopening in the same directory within 5 minutes
 - Supports multiple sessions per directory
-- Session auto-expires after 5 minutes of inactivity
+- Sessions auto-expire after 5 minutes of inactivity
 - Works inside existing tmux sessions without nesting
 
 ## Requirements
@@ -110,3 +120,11 @@ Add to `~/.tmux.conf`:
 ```
 set -g status off
 ```
+
+---
+
+<div align="center">
+
+**Never lose a session. Never lose your flow.**
+
+</div>
