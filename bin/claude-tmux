@@ -35,11 +35,11 @@ _ctm_update() {
   local install_path="${HOME}/.local/share/claude-tmux-session/claude-tmux-session.zsh"
   local tmp current_version new_version
   tmp=$(mktemp /tmp/claude-tmux-session.XXXXXX.zsh)
+  trap "rm -f '$tmp'" EXIT INT TERM
   printf '\033[1;36m[claude-tmux]\033[0m 업데이트 확인 중...\n'
 
   if ! curl -fsSL "$_CLAUDE_TMUX_SCRIPT_URL" -o "$tmp"; then
     printf '\033[1;31m[claude-tmux]\033[0m 다운로드 실패\n'
-    rm -f "$tmp"
     return 1
   fi
 
@@ -48,10 +48,10 @@ _ctm_update() {
 
   if [[ "$new_version" == "$current_version" ]]; then
     printf '\033[1;36m[claude-tmux]\033[0m 이미 최신 버전입니다 (%s)\n' "$current_version"
-    rm -f "$tmp"
     return 0
   fi
 
+  trap - EXIT INT TERM
   mkdir -p "${install_path:h}"
   mv "$tmp" "$install_path"
   printf '\033[1;32m[claude-tmux]\033[0m 업데이트 완료: %s → %s\n' "$current_version" "$new_version"
