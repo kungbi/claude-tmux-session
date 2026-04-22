@@ -38,7 +38,7 @@ _ctm_version() {
 _ctm_update() {
   if _ctm_is_brew; then
     printf '\033[1;36m[claude-tmux]\033[0m Homebrew로 설치됨. 업그레이드 중...\n'
-    brew upgrade claude-tmux-session
+    brew update && brew upgrade claude-tmux-session
     return
   fi
 
