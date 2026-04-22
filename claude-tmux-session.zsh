@@ -1,7 +1,10 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="0.3.2"
+_CLAUDE_TMUX_VERSION="0.3.3"
+
+# Capture script directory at source time (%x = currently sourced file path).
+_CLAUDE_TMUX_SCRIPT_DIR="${${(%):-%x}:A:h}"
 
 # Returns 0 if watcher should be active for this invocation.
 # Precedence: --no-watch flag > --watch flag > persistent stamp.
@@ -15,9 +18,7 @@ _claude_tmux_watch_enabled() {
 
 # Resolve absolute path to bin/claude-watch (next to this script).
 _claude_tmux_watch_script() {
-  local self="${(%):-%N}"
-  local dir="${self:A:h}"
-  print -r -- "${dir}/bin/claude-watch"
+  print -r -- "${_CLAUDE_TMUX_SCRIPT_DIR}/bin/claude-watch"
 }
 
 # Strip --watch / --no-watch from $@ and set _CLAUDE_TMUX_WATCH_OVERRIDE.
