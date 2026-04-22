@@ -75,7 +75,7 @@ _ctm_status() {
     printf 'No active sessions\n'
     return
   fi
-  local now s created elapsed hrs mins secs attached
+  local now s created elapsed hrs mins secs attached i=1
   now=$(date +%s)
   for s in "${sessions[@]}"; do
     created=$(tmux display-message -t "$s" -p "#{session_created}" 2>/dev/null)
@@ -96,10 +96,11 @@ _ctm_status() {
       local age="unknown"
     fi
     if [[ "$attached" == "1" ]]; then
-      printf '%s (running, %s elapsed)\n' "$s" "$age"
+      printf '[%d] %s (running, %s elapsed)\n' "$i" "$s" "$age"
     else
-      printf '%s (idle, %s elapsed)\n' "$s" "$age"
+      printf '[%d] %s (idle, %s elapsed)\n' "$i" "$s" "$age"
     fi
+    i=$((i + 1))
   done
 }
 
