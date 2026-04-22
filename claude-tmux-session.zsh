@@ -15,7 +15,7 @@ _claude_tmux() {
     all_sessions=($(tmux list-sessions -F "#{session_name}" 2>/dev/null | grep "^${dir_hash}"))
     now=$(date +%s)
 
-    # 고아 stamp 파일 정리 (tmux 세션 없이 stamp만 남은 경우)
+    # clean up orphaned stamp files (stamp exists but tmux session does not)
     for stamp_file in "$stamp_dir"/${dir_hash}_*(N); do
       sname="${stamp_file##*/}"
       tmux has-session -t "$sname" 2>/dev/null || rm -f "$stamp_file"
@@ -35,7 +35,7 @@ _claude_tmux() {
     done
 
     if (( ${#valid_sessions[@]} > 0 )); then
-      printf '\033[1;36m[claude]\033[0m 세션 목록: %s\n' "${PWD/#$HOME/~}"
+      printf '\033[1;36m[claude]\033[0m Session list: %s\n' "${PWD/#$HOME/~}"
       local i=1
       for s in "${valid_sessions[@]}"; do
         if [[ -f "$stamp_dir/$s" ]]; then
@@ -44,18 +44,18 @@ _claude_tmux() {
           local mins=$(( elapsed / 60 ))
           local secs=$(( elapsed % 60 ))
           if (( mins > 0 )); then
-            printf '  [%d] %d분 전\n' $i $mins
+            printf '  [%d] %d min ago\n' $i $mins
           else
-            printf '  [%d] %d초 전\n' $i $secs
+            printf '  [%d] %d sec ago\n' $i $secs
           fi
         else
-          printf '  [%d] 활성 세션\n' $i
+          printf '  [%d] active session\n' $i
         fi
         i=$((i + 1))
       done
-      printf '  [n] 새 세션 생성\n'
-      printf '  [q] 취소\n'
-      printf '선택: '
+      printf '  [n] new session\n'
+      printf '  [q] cancel\n'
+      printf 'select: '
       read -k 1 choice
       printf '\n'
 
