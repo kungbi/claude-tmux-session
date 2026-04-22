@@ -72,6 +72,19 @@ claude-tmux off            # disable session manager
 
 `claude-tmux update` runs `brew update && brew upgrade` when installed via Homebrew, or downloads directly for manual installs.
 
+### Session list (`ls`)
+
+```
+[1] claude_099dbc31_... (running, 5m 12s elapsed)
+[2] claude_85225192_... (idle, 2h 4m elapsed)
+[3] claude_e7d7a0db_... (idle, 6h 31m elapsed)
+```
+
+- **running** — Claude Code is currently active in this session
+- **idle** — session exists in the background (Claude exited or detached)
+- **elapsed** — time since the session was created
+- Use `claude-tmux kill <n>` to remove a session by its index number
+
 ## Aliases
 
 Any alias that calls `claude` automatically goes through the session manager — no extra steps needed:
