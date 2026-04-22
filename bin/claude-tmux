@@ -114,7 +114,7 @@ case "$1" in
   update|--update)
     _ctm_update
     ;;
-  status)
+  ls|status)
     _ctm_status
     ;;
   clean)
@@ -125,7 +125,8 @@ case "$1" in
     printf 'Commands:\n'
     printf '  version   print current version\n'
     printf '  update    update to latest version\n'
-    printf '  status    list active sessions\n'
+    printf '  ls        list active sessions\n'
+  printf '  status    alias for ls\n'
     printf '  clean     remove expired stamp files\n'
     ;;
   *)
