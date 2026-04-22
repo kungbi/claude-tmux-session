@@ -1,7 +1,7 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="0.2.9"
+_CLAUDE_TMUX_VERSION="0.2.10"
 
 _claude_tmux() {
   local dir_hash="claude_$(echo "$PWD" | md5 -q | head -c 8)"
