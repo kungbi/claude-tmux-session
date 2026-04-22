@@ -13,6 +13,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update version in zsh file
+        run: |
+          VERSION="${{ github.ref_name }}"
+          SEMVER="${VERSION#v}"
+
+          git checkout main
+          sed -i "s|_CLAUDE_TMUX_VERSION=\".*\"|_CLAUDE_TMUX_VERSION=\"${SEMVER}\"|" claude-tmux-session.zsh
+          git add claude-tmux-session.zsh
+
+          if git diff --staged --quiet; then
+            echo "Version already ${SEMVER}, skipping commit"
+          else
+            git commit -m "chore: bump version to ${SEMVER}"
+            git push origin main
+            git tag -d "${VERSION}"
+            git push origin ":refs/tags/${VERSION}"
+            git tag "${VERSION}"
+            git push origin "${VERSION}"
+          fi
 
       - name: Create GitHub Release
         run: |
