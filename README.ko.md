@@ -14,6 +14,8 @@ _`claude` 실행 → 터미널 닫기 → 돌아오기 → 이어서 작업._
 
 [설치](#설치) • [사용법](#사용법) • [CLI 레퍼런스](#cli)
 
+<img width="620" alt="image" src="https://github.com/user-attachments/assets/7c5d486b-9d45-430f-8e55-cfed62ff80bd" />
+
 ---
 
 ## 기능
