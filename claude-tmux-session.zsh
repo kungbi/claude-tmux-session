@@ -1,7 +1,7 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="0.3.4"
+_CLAUDE_TMUX_VERSION="0.3.5"
 
 # Capture script directory at source time (%x = currently sourced file path).
 _CLAUDE_TMUX_SCRIPT_DIR="${${(%):-%x}:A:h}"
@@ -150,8 +150,7 @@ _claude_tmux() {
 
     if (( watcher_active )); then
       # Step 1: Create detached session with placeholder command
-      tmux new-session -d -s "$new_key" -x "$(tput cols)" -y "$(tput lines)" \
-        "sleep infinity"
+      tmux new-session -d -s "$new_key" "sleep infinity"
 
       # Step 2: Capture claude pane id (stable %N id, not index)
       local claude_pane
