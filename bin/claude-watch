@@ -24,6 +24,8 @@ if [ -n "$cwd" ]; then
   cd "$cwd" || exit 1
 fi
 
+export GIT_PAGER=cat
+
 trap 'exit 0' INT TERM
 
 while true; do
