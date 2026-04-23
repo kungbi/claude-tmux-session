@@ -1,7 +1,7 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="0.2.17"
+_CLAUDE_TMUX_VERSION="0.4.2"
 
 # Returns the last user prompt for a session from ~/.claude/projects/{slug}/{uuid}.jsonl
 _claude_tmux_session_title() {
