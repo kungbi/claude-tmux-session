@@ -3,27 +3,28 @@
 
 _CLAUDE_TMUX_VERSION="0.2.17"
 
-# Returns the first user message for a session from ~/.claude/history.jsonl
+# Returns the last user prompt for a session from ~/.claude/projects/{slug}/{uuid}.jsonl
 _claude_tmux_session_title() {
   local uuid="$1"
-  [[ -z "$uuid" ]] && return
-  local history_file="${HOME}/.claude/history.jsonl"
-  [[ -f "$history_file" ]] || return
+  local pwd="$2"
+  [[ -z "$uuid" || -z "$pwd" ]] && return
+  local slug="${pwd//[^a-zA-Z0-9]/-}"
+  local session_file="${HOME}/.claude/projects/${slug}/${uuid}.jsonl"
+  [[ -f "$session_file" ]] || return
   python3 -c "
 import json, sys
-uuid = sys.argv[1]
-with open(sys.argv[2]) as f:
+with open(sys.argv[1]) as f:
     for line in f:
         try:
             obj = json.loads(line)
-            if obj.get('sessionId') == uuid:
-                d = obj.get('display', '').strip()
+            if obj.get('type') == 'last-prompt':
+                d = obj.get('lastPrompt', '').strip()
                 if d:
                     print(d[:50])
                     sys.exit(0)
         except:
             pass
-" "$uuid" "$history_file" 2>/dev/null
+" "$session_file" 2>/dev/null
 }
 
 _claude_tmux() {
@@ -95,14 +96,23 @@ _claude_tmux() {
           local mins=$(( elapsed / 60 )) secs=$(( elapsed % 60 ))
           local time_str="${secs} sec ago"
           (( mins > 0 )) && time_str="${mins} min ago"
-          local title=$(_claude_tmux_session_title "$session_uuid")
+          local title=$(_claude_tmux_session_title "$session_uuid" "$PWD")
           if [[ -n "$title" ]]; then
             printf '  [%d] "%s" - %s\n' $i "$title" "$time_str"
           else
-            printf '  [%d] %s\n' $i "$time_str"
+            printf '  [%d] active session - %s\n' $i "$time_str"
           fi
         else
-          printf '  [%d] active session\n' $i
+          local tmux_created=$(tmux display-message -t "$s" -p "#{session_created}" 2>/dev/null)
+          if [[ -n "$tmux_created" ]]; then
+            elapsed=$((now - tmux_created))
+            local mins=$(( elapsed / 60 )) secs=$(( elapsed % 60 ))
+            local time_str="${secs} sec ago"
+            (( mins > 0 )) && time_str="${mins} min ago"
+            printf '  [%d] active session - %s\n' $i "$time_str"
+          else
+            printf '  [%d] active session\n' $i
+          fi
         fi
         i=$((i + 1))
       done
