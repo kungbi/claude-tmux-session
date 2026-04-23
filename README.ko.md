@@ -61,7 +61,7 @@ claude
 
 ```
 [claude] Session list: ~/your/project
-  [1] 2분 전
+  [1] "인증 미들웨어 구현" - 2분 전
   [2] 활성 세션
   [n] 새 세션 생성
   [q] 취소

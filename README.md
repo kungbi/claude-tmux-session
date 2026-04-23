@@ -61,7 +61,7 @@ When you return to the same directory within 5 minutes after closing, you'll see
 
 ```
 [claude] Session list: ~/your/project
-  [1] 2 min ago
+  [1] "Implement auth middleware" - 2 min ago
   [2] active session
   [n] new session
   [q] cancel
