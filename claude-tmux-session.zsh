@@ -1,7 +1,7 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="0.3.0"
+_CLAUDE_TMUX_VERSION="0.2.17"
 
 # Returns the first user message for a session from ~/.claude/history.jsonl
 _claude_tmux_session_title() {
