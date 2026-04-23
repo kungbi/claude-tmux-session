@@ -145,8 +145,8 @@ _claude_tmux() {
     local session_uuid=$(uuidgen | tr '[:upper:]' '[:lower:]')
     local new_key="${dir_hash}_$(date +%s)_$$"
     local claude_args=${(q-)@}
-    tmux new-session -s "$new_key" "command claude --session-id ${session_uuid} ${claude_args}; echo \"\$(date +%s):${session_uuid}\" > \"${stamp_dir}/${new_key}\""
     echo "$(date +%s):${session_uuid}" > "$stamp_dir/$new_key"
+    tmux new-session -s "$new_key" "command claude --session-id ${session_uuid} ${claude_args}; echo \"\$(date +%s):${session_uuid}\" > \"${stamp_dir}/${new_key}\""
   else
     command claude "$@"
   fi
