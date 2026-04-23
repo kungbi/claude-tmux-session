@@ -116,14 +116,6 @@ claude-tmux alias ct
 source ~/.zshrc
 ```
 
-## 팁: tmux 상태바 숨기기
-
-`~/.tmux.conf`에 추가:
-
-```
-set -g status off
-```
-
 ---
 
 <div align="center">
