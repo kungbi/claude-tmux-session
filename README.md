@@ -116,14 +116,6 @@ claude-tmux alias ct
 source ~/.zshrc
 ```
 
-## Tip: Hide tmux status bar
-
-Add to `~/.tmux.conf`:
-
-```
-set -g status off
-```
-
 ---
 
 <div align="center">
