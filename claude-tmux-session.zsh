@@ -1,7 +1,8 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-_CLAUDE_TMUX_VERSION="0.4.3"
+
+_CLAUDE_TMUX_VERSION="0.4.4"
 
 # Returns the last user prompt for a session from ~/.claude/projects/{slug}/{uuid}.jsonl
 _claude_tmux_session_title() {
@@ -13,6 +14,7 @@ _claude_tmux_session_title() {
   [[ -f "$session_file" ]] || return
   python3 -c "
 import json, sys
+last = None
 with open(sys.argv[1]) as f:
     for line in f:
         try:
@@ -20,17 +22,17 @@ with open(sys.argv[1]) as f:
             if obj.get('type') == 'last-prompt':
                 d = obj.get('lastPrompt', '').strip()
                 if d:
-                    print(d[:50])
-                    sys.exit(0)
+                    last = d
         except:
             pass
+if last:
+    print(last.replace('\n', ' ')[:100])
 " "$session_file" 2>/dev/null
 }
 
 _claude_tmux() {
   local dir_hash="claude_$(echo "$PWD" | md5 -q | head -c 8)"
   local stamp_dir="${HOME}/.cache/claude-sessions"
-  local session_ttl=300
 
   mkdir -p "$stamp_dir"
 
@@ -61,21 +63,6 @@ _claude_tmux() {
     done
 
     for s in "${all_sessions[@]}"; do
-      if [[ -f "$stamp_dir/$s" ]]; then
-        saved_raw=$(< "$stamp_dir/$s")
-        # Parse {timestamp}:{uuid} or legacy {timestamp}
-        if [[ "$saved_raw" == *:* ]]; then
-          saved="${saved_raw%%:*}"
-        else
-          saved="$saved_raw"
-        fi
-        elapsed=$((now - saved))
-        if (( elapsed >= session_ttl )); then
-          tmux kill-session -t "$s" 2>/dev/null
-          rm -f "$stamp_dir/$s"
-          continue
-        fi
-      fi
       valid_sessions+=("$s")
     done
 
