@@ -41,11 +41,11 @@ _claude_tmux() {
     return
   fi
 
-  # --dangerously-load-development-channels requires resources bound to the current
+  # --dangerously-load-development-channels and --channels require resources bound to the current
   # shell session (IPC sockets etc.) that don't survive a new tmux session
   local _arg
   for _arg in "$@"; do
-    if [[ "$_arg" == --dangerously-load-development-channels* ]]; then
+    if [[ "$_arg" == --dangerously-load-development-channels* || "$_arg" == --channels* ]]; then
       command claude "$@"
       return
     fi
