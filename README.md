@@ -12,7 +12,7 @@ English | [한국어](README.ko.md)
 
 _Run `claude`. Close your terminal. Come back. Pick up where you left off._
 
-[Installation](#installation) • [Usage](#usage) • [CLI Reference](#cli)
+[Installation](#installation) • [Usage](#usage) • [CLI Reference](#cli) • [Compatibility](#compatibility)
 
 <img width="620" alt="image" src="https://github.com/user-attachments/assets/7c5d486b-9d45-430f-8e55-cfed62ff80bd" />
 
@@ -120,33 +120,13 @@ source ~/.zshrc
 
 ### cmux
 
-If you use [cmux](https://cmux.com) as your terminal workspace, the tmux session created by claude-tmux-session runs outside cmux's process ancestry. By default, cmux only allows socket connections from processes it directly spawned (`cmuxOnly` mode), which causes `cmux` CLI commands to fail with a `Broken pipe` error inside the tmux session.
-
-**Symptoms**
-
-```
-Error: Failed to write to socket (Broken pipe, errno 32)
-```
-
-**Root cause**
-
-cmux's socket access control performs a process ancestry check. When claude-tmux-session wraps `claude` inside a new tmux session, that tmux process is not a direct child of cmux, so the socket connection is rejected.
-
-**Fix**
-
-Change cmux's socket control mode to `allowAll` so that any local process can connect:
+If you use [cmux](https://cmux.com), run this once to allow `cmux` CLI commands inside tmux sessions created by claude-tmux-session:
 
 ```zsh
 defaults write com.cmuxterm.app socketControlMode -string "allowAll"
 ```
 
-Then restart the cmux app. After restarting, `cmux` CLI commands will work normally inside tmux sessions.
-
-> **Note:** `allowAll` permits any process on the same machine to connect to the cmux socket. If you are in a shared or untrusted environment, consider using `password` mode instead and setting `CMUX_SOCKET_PASSWORD`.
-
-**Suggested long-term fix (for cmux maintainers)**
-
-Expose a per-workspace or per-session socket policy so users who intentionally run tmux inside cmux are not blocked without a global setting change.
+Then restart cmux. See [PR #12](https://github.com/kungbi/claude-tmux-session/pull/12) for details.
 
 ---
 

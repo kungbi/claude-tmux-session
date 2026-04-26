@@ -12,7 +12,7 @@
 
 _`claude` 실행 → 터미널 닫기 → 돌아오기 → 이어서 작업._
 
-[설치](#설치) • [사용법](#사용법) • [CLI 레퍼런스](#cli)
+[설치](#설치) • [사용법](#사용법) • [CLI 레퍼런스](#cli) • [호환성](#호환성)
 
 <img width="620" alt="image" src="https://github.com/user-attachments/assets/7c5d486b-9d45-430f-8e55-cfed62ff80bd" />
 
@@ -120,33 +120,13 @@ source ~/.zshrc
 
 ### cmux
 
-[cmux](https://cmux.com)를 터미널 워크스페이스로 사용하는 경우, claude-tmux-session이 생성한 tmux 세션은 cmux의 프로세스 계층 외부에서 실행됩니다. cmux는 기본적으로 자신이 직접 spawn한 프로세스만 소켓 연결을 허용(`cmuxOnly` 모드)하기 때문에, tmux 세션 안에서 `cmux` CLI 명령어가 `Broken pipe` 에러와 함께 실패합니다.
-
-**증상**
-
-```
-Error: Failed to write to socket (Broken pipe, errno 32)
-```
-
-**원인**
-
-cmux의 소켓 접근 제어는 프로세스 ancestry 체크를 수행합니다. claude-tmux-session이 `claude`를 새 tmux 세션으로 감싸면, 해당 tmux 프로세스는 cmux의 직접 자식이 아니므로 소켓 연결이 거절됩니다.
-
-**해결 방법**
-
-cmux의 소켓 제어 모드를 `allowAll`로 변경하면 로컬의 모든 프로세스가 연결할 수 있습니다:
+[cmux](https://cmux.com)를 사용하는 경우, tmux 세션 안에서 `cmux` CLI가 동작하려면 아래 명령어를 한 번 실행하세요:
 
 ```zsh
 defaults write com.cmuxterm.app socketControlMode -string "allowAll"
 ```
 
-설정 후 cmux 앱을 재시작하면 tmux 세션 안에서도 `cmux` CLI 명령어가 정상 동작합니다.
-
-> **참고:** `allowAll` 모드는 동일 머신의 모든 프로세스가 cmux 소켓에 연결할 수 있게 합니다. 공유/신뢰할 수 없는 환경에서는 `password` 모드와 `CMUX_SOCKET_PASSWORD` 환경변수 사용을 권장합니다.
-
-**장기적 개선 제안 (cmux 메인테이너에게)**
-
-전역 설정 변경 없이도 tmux 안에서 cmux를 사용하는 케이스를 지원할 수 있도록, 워크스페이스 또는 세션 단위의 소켓 정책 설정을 제공해주세요.
+설정 후 cmux를 재시작하세요. 자세한 내용은 [PR #12](https://github.com/kungbi/claude-tmux-session/pull/12)를 참고하세요.
 
 ---
 
