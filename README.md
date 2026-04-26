@@ -12,7 +12,7 @@ English | [한국어](README.ko.md)
 
 _Run `claude`. Close your terminal. Come back. Pick up where you left off._
 
-[Installation](#installation) • [Usage](#usage) • [CLI Reference](#cli)
+[Installation](#installation) • [Usage](#usage) • [CLI Reference](#cli) • [Compatibility](#compatibility)
 
 <img width="620" alt="image" src="https://github.com/user-attachments/assets/7c5d486b-9d45-430f-8e55-cfed62ff80bd" />
 
@@ -115,6 +115,18 @@ To register a short alias:
 claude-tmux alias ct
 source ~/.zshrc
 ```
+
+## Compatibility
+
+### cmux
+
+If you use [cmux](https://cmux.com), run this once to allow `cmux` CLI commands inside tmux sessions created by claude-tmux-session:
+
+```zsh
+defaults write com.cmuxterm.app socketControlMode -string "allowAll"
+```
+
+Then restart cmux. See [PR #12](https://github.com/kungbi/claude-tmux-session/pull/12) for details.
 
 ---
 

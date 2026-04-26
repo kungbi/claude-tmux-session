@@ -12,7 +12,7 @@
 
 _`claude` 실행 → 터미널 닫기 → 돌아오기 → 이어서 작업._
 
-[설치](#설치) • [사용법](#사용법) • [CLI 레퍼런스](#cli)
+[설치](#설치) • [사용법](#사용법) • [CLI 레퍼런스](#cli) • [호환성](#호환성)
 
 <img width="620" alt="image" src="https://github.com/user-attachments/assets/7c5d486b-9d45-430f-8e55-cfed62ff80bd" />
 
@@ -115,6 +115,18 @@ alias ccc='claude --dangerously-skip-permissions --channels your-channel'
 claude-tmux alias ct
 source ~/.zshrc
 ```
+
+## 호환성
+
+### cmux
+
+[cmux](https://cmux.com)를 사용하는 경우, tmux 세션 안에서 `cmux` CLI가 동작하려면 아래 명령어를 한 번 실행하세요:
+
+```zsh
+defaults write com.cmuxterm.app socketControlMode -string "allowAll"
+```
+
+설정 후 cmux를 재시작하세요. 자세한 내용은 [PR #12](https://github.com/kungbi/claude-tmux-session/pull/12)를 참고하세요.
 
 ---
 
