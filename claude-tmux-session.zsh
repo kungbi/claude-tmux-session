@@ -1,8 +1,7 @@
 # claude-tmux-session.zsh
 # Claude Code tmux session manager (macOS)
 
-
-_CLAUDE_TMUX_VERSION="0.4.5"
+_CLAUDE_TMUX_VERSION="0.5.0"
 
 # Returns the last user prompt for a session from ~/.claude/projects/{slug}/{uuid}.jsonl
 _claude_tmux_session_title() {
@@ -33,6 +32,7 @@ if last:
 _claude_tmux() {
   local dir_hash="claude_$(echo "$PWD" | md5 -q | head -c 8)"
   local stamp_dir="${HOME}/.cache/claude-sessions"
+  local background_ttl=$(( 3 * 24 * 3600 ))
 
   mkdir -p "$stamp_dir"
 
@@ -52,7 +52,7 @@ _claude_tmux() {
   done
 
   if [[ -z "$TMUX" ]]; then
-    local s stamp_file sname all_sessions valid_sessions=() now elapsed saved_raw saved session_uuid
+    local s stamp_file sname all_sessions valid_sessions=() now elapsed
     all_sessions=($(tmux list-sessions -F "#{session_name}" 2>/dev/null | grep "^${dir_hash}"))
     now=$(date +%s)
 
@@ -63,6 +63,21 @@ _claude_tmux() {
     done
 
     for s in "${all_sessions[@]}"; do
+      local attached last_attached
+      attached=$(tmux display-message -t "$s" -p "#{session_attached}" 2>/dev/null)
+      if [[ "$attached" == "1" ]]; then
+        valid_sessions+=("$s")
+        continue
+      fi
+      last_attached=$(tmux display-message -t "$s" -p "#{session_last_attached}" 2>/dev/null)
+      if [[ -n "$last_attached" && "$last_attached" -gt 0 ]]; then
+        elapsed=$(( now - last_attached ))
+        if (( elapsed >= background_ttl )); then
+          tmux kill-session -t "$s" 2>/dev/null
+          rm -f "$stamp_dir/$s"
+          continue
+        fi
+      fi
       valid_sessions+=("$s")
     done
 
@@ -70,36 +85,36 @@ _claude_tmux() {
       printf '\033[1;36m[claude]\033[0m Session list: %s\n' "${PWD/#$HOME/~}"
       local i=1
       for s in "${valid_sessions[@]}"; do
-        if [[ -f "$stamp_dir/$s" ]]; then
-          saved_raw=$(< "$stamp_dir/$s")
-          if [[ "$saved_raw" == *:* ]]; then
-            saved="${saved_raw%%:*}"
-            session_uuid="${saved_raw#*:}"
-          else
-            saved="$saved_raw"
-            session_uuid=""
-          fi
-          elapsed=$((now - saved))
-          local mins=$(( elapsed / 60 )) secs=$(( elapsed % 60 ))
-          local time_str="${secs} sec ago"
-          (( mins > 0 )) && time_str="${mins} min ago"
-          local title=$(_claude_tmux_session_title "$session_uuid" "$PWD")
-          if [[ -n "$title" ]]; then
-            printf '  [%d] "%s" - %s\n' $i "$title" "$time_str"
-          else
-            printf '  [%d] active session - %s\n' $i "$time_str"
-          fi
+        local attached last_attached time_str title session_uuid=""
+        attached=$(tmux display-message -t "$s" -p "#{session_attached}" 2>/dev/null)
+        if [[ "$attached" == "1" ]]; then
+          time_str="active"
         else
-          local tmux_created=$(tmux display-message -t "$s" -p "#{session_created}" 2>/dev/null)
-          if [[ -n "$tmux_created" ]]; then
-            elapsed=$((now - tmux_created))
-            local mins=$(( elapsed / 60 )) secs=$(( elapsed % 60 ))
-            local time_str="${secs} sec ago"
-            (( mins > 0 )) && time_str="${mins} min ago"
-            printf '  [%d] active session - %s\n' $i "$time_str"
+          last_attached=$(tmux display-message -t "$s" -p "#{session_last_attached}" 2>/dev/null)
+          if [[ -n "$last_attached" && "$last_attached" -gt 0 ]]; then
+            elapsed=$(( now - last_attached ))
+            local mins=$(( elapsed / 60 )) hrs=$(( elapsed / 3600 ))
+            if (( hrs > 0 )); then
+              time_str="${hrs}h ago"
+            elif (( mins > 0 )); then
+              time_str="${mins} min ago"
+            else
+              time_str="${elapsed} sec ago"
+            fi
           else
-            printf '  [%d] active session\n' $i
+            time_str="background"
           fi
+        fi
+        if [[ -f "$stamp_dir/$s" ]]; then
+          local saved_raw
+          saved_raw=$(< "$stamp_dir/$s")
+          [[ "$saved_raw" == *:* ]] && session_uuid="${saved_raw#*:}"
+        fi
+        title=$(_claude_tmux_session_title "$session_uuid" "$PWD")
+        if [[ -n "$title" ]]; then
+          printf '  [%d] "%s" - %s\n' $i "$title" "$time_str"
+        else
+          printf '  [%d] %s\n' $i "$time_str"
         fi
         i=$((i + 1))
       done
@@ -116,24 +131,22 @@ _claude_tmux() {
       if [[ "$choice" =~ ^[1-9]$ ]] && (( choice >= 1 && choice <= ${#valid_sessions[@]} )); then
         local selected="${valid_sessions[$choice]}"
         tmux attach-session -t "$selected"
-        # Preserve UUID when updating stamp timestamp after re-attach
-        local existing_raw=$(< "$stamp_dir/$selected")
-        local existing_uuid=""
-        [[ "$existing_raw" == *:* ]] && existing_uuid="${existing_raw#*:}"
-        if [[ -n "$existing_uuid" ]]; then
-          echo "$(date +%s):${existing_uuid}" > "$stamp_dir/$selected"
-        else
-          echo "$(date +%s)" > "$stamp_dir/$selected"
-        fi
         return
       fi
     fi
 
     local session_uuid=$(uuidgen | tr '[:upper:]' '[:lower:]')
     local new_key="${dir_hash}_$(date +%s)_$$"
-    local claude_args=${(q-)@}
+    local wrapper
+    wrapper=$(mktemp "${stamp_dir}/.wrap.XXXXXX.zsh")
+    {
+      print -r -- '#!/bin/zsh'
+      print -r -- "command claude --session-id ${(q)session_uuid} ${(q-)@}"
+    } > "$wrapper"
+    chmod +x "$wrapper"
     echo "$(date +%s):${session_uuid}" > "$stamp_dir/$new_key"
-    tmux new-session -s "$new_key" "command claude --session-id ${session_uuid} ${claude_args}; echo \"\$(date +%s):${session_uuid}\" > \"${stamp_dir}/${new_key}\""
+    tmux new-session -s "$new_key" -c "$PWD" "$wrapper"
+    rm -f "$wrapper"
   else
     command claude "$@"
   fi

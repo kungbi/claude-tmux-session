@@ -114,11 +114,11 @@ _ctm_kill() {
   fi
 
   if [[ -n "$1" ]]; then
-    local target="${sessions[$1]}"
-    if [[ -z "$target" ]]; then
-      printf 'Session %s not found\n' "$1" >&2
+    if [[ ! "$1" =~ ^[0-9]+$ ]] || (( $1 < 1 || $1 > ${#sessions[@]} )); then
+      printf 'Invalid session number: %s (expected 1..%d)\n' "$1" "${#sessions[@]}" >&2
       return 1
     fi
+    local target="${sessions[$1]}"
     printf 'Kill session %s? [y/N]: ' "$target"
     read -k 1 confirm
     printf '\n'
