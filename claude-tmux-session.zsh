@@ -52,9 +52,8 @@ _claude_tmux() {
   done
 
   if [[ -z "$TMUX" ]]; then
-    local s stamp_file sname all_sessions valid_sessions=() now elapsed
+    local s stamp_file sname all_sessions valid_sessions=() elapsed
     all_sessions=($(tmux list-sessions -F "#{session_name}" 2>/dev/null | grep "^${dir_hash}"))
-    now=$(date +%s)
 
     # clean up orphaned stamp files (stamp exists but tmux session does not)
     for stamp_file in "$stamp_dir"/${dir_hash}_*(N); do
@@ -71,7 +70,7 @@ _claude_tmux() {
       fi
       last_attached=$(tmux display-message -t "$s" -p "#{session_last_attached}" 2>/dev/null)
       if [[ -n "$last_attached" && "$last_attached" -gt 0 ]]; then
-        elapsed=$(( now - last_attached ))
+        elapsed=$(( $(date +%s) - last_attached ))
         if (( elapsed >= background_ttl )); then
           tmux kill-session -t "$s" 2>/dev/null
           rm -f "$stamp_dir/$s"
@@ -92,7 +91,7 @@ _claude_tmux() {
         else
           last_attached=$(tmux display-message -t "$s" -p "#{session_last_attached}" 2>/dev/null)
           if [[ -n "$last_attached" && "$last_attached" -gt 0 ]]; then
-            elapsed=$(( now - last_attached ))
+            elapsed=$(( $(date +%s) - last_attached ))
             local mins=$(( elapsed / 60 )) hrs=$(( elapsed / 3600 ))
             if (( hrs > 0 )); then
               time_str="${hrs}h ago"
@@ -111,6 +110,7 @@ _claude_tmux() {
           [[ "$saved_raw" == *:* ]] && session_uuid="${saved_raw#*:}"
         fi
         title=$(_claude_tmux_session_title "$session_uuid" "$PWD")
+        [[ -n "$title" ]] && tmux rename-window -t "${s}:0" "${title}" 2>/dev/null
         if [[ -n "$title" ]]; then
           printf '  [%d] "%s" - %s\n' $i "$title" "$time_str"
         else
