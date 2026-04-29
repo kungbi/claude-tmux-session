@@ -138,7 +138,7 @@ _claude_tmux() {
     local session_uuid=$(uuidgen | tr '[:upper:]' '[:lower:]')
     local new_key="${dir_hash}_$(date +%s)_$$"
     local wrapper
-    wrapper=$(mktemp "${stamp_dir}/.wrap.XXXXXX.zsh")
+    wrapper=$(mktemp "${stamp_dir}/.wrap.XXXXXX")
     {
       print -r -- '#!/bin/zsh'
       print -r -- "command claude --session-id ${(q)session_uuid} ${(q-)@}"
